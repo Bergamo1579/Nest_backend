@@ -8,7 +8,7 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 
 # Instale dependências de produção + CLI do NestJS globalmente para build
-RUN npm install --omit=dev && npm install -g @nestjs/cli
+RUN npm ci && npm install -g @nestjs/cli
 
 # Copy the rest of the application code
 COPY . .
