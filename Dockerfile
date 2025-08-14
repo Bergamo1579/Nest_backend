@@ -1,5 +1,5 @@
 # Use the official Node.js image as the base
-FROM node:18-alpine AS builder
+FROM node:20-alpine AS builder
 
 # Set the working directory
 WORKDIR /app
@@ -7,17 +7,17 @@ WORKDIR /app
 # Copy package.json and package-lock.json
 COPY package.json package-lock.json ./
 
-# Install dependencies
-RUN npm install --production
+# Instale dependências de produção + CLI do NestJS globalmente para build
+RUN npm install --omit=dev && npm install -g @nestjs/cli
 
 # Copy the rest of the application code
 COPY . .
 
 # Build the application
-RUN npm run build
+RUN nest build
 
 # Use a lightweight production image
-FROM node:18-alpine AS runner
+FROM node:20-alpine AS runner
 
 # Set the working directory
 WORKDIR /app
