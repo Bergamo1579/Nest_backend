@@ -9,32 +9,8 @@ services:
       - "3000:3000"
     environment:
       NODE_ENV: production
-      # Adicione variáveis do .env conforme necessário, exemplo:
-      # DATABASE_HOST: database
-      # DATABASE_PORT: 5432
-      # DATABASE_USER: nest_user
-      # DATABASE_PASSWORD: nest_password
-      # DATABASE_NAME: nest_db
+      # Adicione variáveis do .env conforme necessário
     restart: always
     volumes:
       - .:/app
-      # Remova o volume node_modules para evitar conflitos
       # - /app/node_modules
-    depends_on:
-      - database
-
-  database:
-    image: postgres:14
-    container_name: postgres
-    restart: always
-    environment:
-      POSTGRES_USER: nest_user
-      POSTGRES_PASSWORD: nest_password
-      POSTGRES_DB: nest_db
-    ports:
-      - "5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-
-volumes:
-  postgres_data:
