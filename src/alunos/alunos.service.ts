@@ -50,7 +50,9 @@ export class AlunosService {
     if (query?.turma_id) {
       qb.andWhere('aluno.turma_id = :turma_id', { turma_id: query.turma_id });
     }
-
+    if (query?.empresa_id) {
+      qb.andWhere('aluno.empresa_id = :empresa_id', { empresa_id: query.empresa_id });
+    }
 
     return qb.getMany();
   }
