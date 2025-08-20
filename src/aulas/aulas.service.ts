@@ -37,28 +37,30 @@ export class AulasService {
     return this.aulasRepository.find();
   }
 
-  async create(dto: CreateAulaDto, file: Express.Multer.File): Promise<Aula> {
-    if (!file) {
-      throw new Error('Arquivo de imagem é obrigatório');
-    }
-
-    const imagePath = `uploads/${file.filename}`;
-
+  async create(dto: CreateAulaDto, file?: Express.Multer.File): Promise<Aula> {
     const aulaData: Partial<Aula> = {
       ...dto,
-      icon_src: imagePath,
     };
 
+    if (file) {
+      aulaData.icon_src = `uploads/${file.filename}`;
+    }
+
     const aula = this.aulasRepository.create(aulaData);
-    return this.aulasRepository.save(aula); // Salva e retorna a entidade completa
+    return this.aulasRepository.save(aula);
   }
 
-  async update(id: string, dto: UpdateAulaDto): Promise<IAula> {
+  async update(id: string, dto: UpdateAulaDto, file?: Express.Multer.File): Promise<IAula> {
     const aula = await this.aulasRepository.findOneBy({ id });
     if (!aula) {
       throw new NotFoundException(`Aula com id ${id} não encontrada`);
     }
     Object.assign(aula, dto);
+
+    if (file) {
+      aula.icon_src = `uploads/${file.filename}`;
+    }
+
     return this.aulasRepository.save(aula);
   }
 

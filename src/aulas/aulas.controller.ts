@@ -43,29 +43,58 @@ export class AulasController {
   @Post()
   @ApiOperation({ summary: 'Cria uma nova aula' })
   @ApiResponse({ status: 201, description: 'Aula criada com sucesso', type: Aula })
-  @ApiConsumes('multipart/form-data') // Indica que o endpoint aceita multipart/form-data
+  @ApiConsumes('multipart/form-data')
   @ApiBody({
-    description: 'Dados para criar uma aula, incluindo o arquivo de imagem',
-    type: CreateAulaDto,
+    schema: {
+      type: 'object',
+      properties: {
+        titulo: { type: 'string', example: 'Aula de Matemática' },
+        descricao: { type: 'string', example: 'Conteúdo introdutório' },
+        file: {
+          type: 'string',
+          format: 'binary',
+          description: 'Arquivo de imagem (opcional)'
+        }
+      },
+      required: ['titulo', 'descricao'] // Remova 'file' dos obrigatórios
+    }
   })
-  @UseInterceptors(FileInterceptor('file')) // Configura o interceptor para receber o arquivo
+  @UseInterceptors(FileInterceptor('file'))
   async create(
     @Body(SanitizePipe) dto: CreateAulaDto,
-    @UploadedFile() file: Express.Multer.File, // Recebe o arquivo enviado
+    @UploadedFile() file?: Express.Multer.File, // Agora opcional
   ): Promise<Aula> {
-    if (!file) {
-      throw new BadRequestException('O arquivo de imagem é obrigatório');
-    }
     this.aulasRequests.inc();
     this.logger.info('Criando nova aula', { dto });
-    return this.aulasService.create(dto, file); // Certifique-se de que o service retorna uma instância de Aula
+    return this.aulasService.create(dto, file); // O service deve aceitar file como opcional
   }
 
   @Put(':id')
   @ApiOperation({ summary: 'Atualiza uma aula existente' })
   @ApiResponse({ status: 200, description: 'Aula atualizada com sucesso', type: Aula })
-  async update(@Param('id') id: string, @Body(SanitizePipe) dto: UpdateAulaDto): Promise<Aula> {
-    return this.aulasService.update(id, dto);
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        titulo: { type: 'string', example: 'Aula de Matemática' },
+        descricao: { type: 'string', example: 'Conteúdo atualizado' },
+        file: {
+          type: 'string',
+          format: 'binary',
+          description: 'Arquivo de imagem (opcional)'
+        }
+      }
+      // Nenhum campo obrigatório no PUT
+    }
+  })
+  @UseInterceptors(FileInterceptor('file'))
+  async update(
+    @Param('id') id: string,
+    @Body(SanitizePipe) dto: UpdateAulaDto,
+    @UploadedFile() file?: Express.Multer.File
+  ): Promise<Aula> {
+    return this.aulasService.update(id, dto, file); // O service deve aceitar file como opcional
   }
 
   @Delete(':id')
