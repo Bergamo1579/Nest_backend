@@ -6,11 +6,11 @@ import { ValidationPipe } from '@nestjs/common';
 import { rateLimitConfig } from './config/rate-limit.config';
 import { Logger } from 'nestjs-pino';
 import helmet from 'helmet';
-import { corsConfig } from './config/cors.config';
-
+import { join } from 'path';
+import { NestExpressApplication } from '@nestjs/platform-express';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule, { bufferLogs: true });
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, { bufferLogs: true });
   app.useLogger(app.get(Logger));
 
   app.use(
@@ -23,11 +23,12 @@ async function bootstrap() {
       },
     })
   );
+  const corsOrigins = process.env.CORS_ORIGINS
+    ? process.env.CORS_ORIGINS.split(',').map(origin => origin.trim())
+    : [];
+
   app.enableCors({
-    origin: [
-      'http://localhost:3001',
-      'http://localhost:3000'
-    ],
+    origin: corsOrigins,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true,
@@ -35,6 +36,7 @@ async function bootstrap() {
   app.use(rateLimitConfig);
   app.useGlobalFilters(new TypeOrmExceptionFilter());
   app.useGlobalPipes(new ValidationPipe());
+  app.useStaticAssets(join(__dirname, '..', 'arc'), { prefix: '/arc/' });
 
   setupDocs(app);
 
