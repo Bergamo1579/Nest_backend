@@ -37,6 +37,7 @@ async function bootstrap() {
   app.useGlobalFilters(new TypeOrmExceptionFilter());
   app.useGlobalPipes(new ValidationPipe());
   app.useStaticAssets(join(__dirname, '..', 'arc'), { prefix: '/arc/' });
+  app.set('trust proxy', 1);
 
   setupDocs(app);
 
