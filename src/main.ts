@@ -38,6 +38,12 @@ async function bootstrap() {
   app.useGlobalPipes(new ValidationPipe());
   app.useStaticAssets(join(__dirname, '..', 'arc'), { prefix: '/arc/' });
 
+  // Adicione este middleware para liberar imagens para outros domínios
+  app.use('/arc/image', (req, res, next) => {
+    res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+    next();
+  });
+
   app.set('trust proxy', 1);
 
   setupDocs(app);
