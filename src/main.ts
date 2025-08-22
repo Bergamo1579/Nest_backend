@@ -19,6 +19,7 @@ async function bootstrap() {
         directives: {
           ...helmet.contentSecurityPolicy.getDefaultDirectives(),
           'script-src': ["'self'", 'https://cdn.jsdelivr.net'],
+          'img-src': ["'self'", 'data:', 'https:', 'http:'], // Adicione esta linha
         },
       },
     })
@@ -36,13 +37,25 @@ async function bootstrap() {
   app.use(rateLimitConfig);
   app.useGlobalFilters(new TypeOrmExceptionFilter());
   app.useGlobalPipes(new ValidationPipe());
-  app.useStaticAssets(join(__dirname, '..', 'arc'), { prefix: '/arc/' });
 
-  // Adicione este middleware para liberar imagens para outros domínios
-  app.use('/arc/image', (req, res, next) => {
+  // Middleware específico para arquivos estáticos (ANTES do useStaticAssets)
+  app.use('/arc', (req, res, next) => {
+    // Headers para permitir cross-origin para imagens
     res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
+
+    // Para requisições OPTIONS (preflight)
+    if (req.method === 'OPTIONS') {
+      res.status(200).end();
+      return;
+    }
+
     next();
   });
+
+  app.useStaticAssets(join(__dirname, '..', 'arc'), { prefix: '/arc/' });
 
   app.set('trust proxy', 1);
 
