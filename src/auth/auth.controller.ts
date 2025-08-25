@@ -9,11 +9,11 @@ import * as path from 'path';
 
 const loginAttempts = new Map<string, { count: number, lastAttempt: number, blockedUntil?: number }>();
 const MAX_ATTEMPTS = 5;
-const BLOCK_TIME_MS = 5 * 60 * 1000; // 5 minutos
+const BLOCK_TIME_MS = 3 * 60 * 1000; 
 const LOG_DIR = path.join(process.cwd(), 'logs');
 const LOG_FILE = path.join(LOG_DIR, 'login-blocked.log');
 
-// Garante que a pasta de logs existe
+
 if (!fs.existsSync(LOG_DIR)) {
   fs.mkdirSync(LOG_DIR, { recursive: true });
 }
@@ -61,6 +61,11 @@ export class AuthController {
     const key = loginDto.username;
     const now = Date.now();
     const attempt = loginAttempts.get(key);
+
+    // Se passou do tempo de bloqueio, reseta as tentativas
+    if (attempt?.blockedUntil && now >= attempt.blockedUntil) {
+      loginAttempts.delete(key);
+    }
 
     // Bloqueio ativo (não registra log se já está bloqueado)
     if (attempt?.blockedUntil && now < attempt.blockedUntil) {
