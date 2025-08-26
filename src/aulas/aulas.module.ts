@@ -17,6 +17,9 @@ import { ObjetivaRespostas } from '../atividades/entity/objetiva-respostas.entit
 import { MultiplaEscolhaPerguntas } from '../atividades/entity/multipla-escolha-perguntas.entity';
 import { ObjetivaPerguntas } from '../atividades/entity/objetiva-perguntas.entity';
 import { MultiplaEscolhaGabarito } from '../atividades/entity/multipla-escolha-gabarito.entity';
+import { ConteudoModule } from '../conteudo/conteudo.module'; // <-- Importe aqui
+import { AtividadesService } from '../atividades/atividades.service';
+import { MultiplaEscolhaRespostas } from '../atividades/entity/multipla-escolha-respostas.entity'; // <-- importe
 
 @Module({
   imports: [
@@ -27,7 +30,8 @@ import { MultiplaEscolhaGabarito } from '../atividades/entity/multipla-escolha-g
       ObjetivaRespostas,
       MultiplaEscolhaPerguntas,
       ObjetivaPerguntas,
-      MultiplaEscolhaGabarito, // <-- ADICIONE ESTA LINHA
+      MultiplaEscolhaGabarito,
+      MultiplaEscolhaRespostas,
       UserAccessLevel,
     ]),
     MulterModule.register({
@@ -40,13 +44,15 @@ import { MultiplaEscolhaGabarito } from '../atividades/entity/multipla-escolha-g
         },
       }),
     }),
-    AtividadesModule
+    AtividadesModule,
+    ConteudoModule, // <-- Adicione aqui
   ],
   controllers: [AulasController],
   providers: [
     AulasService,
     AdmPermissionGuard,
     Reflector,
+    AtividadesService,
     {
       provide: 'PROM_METRIC_AULAS_REQUESTS_TOTAL',
       useValue: new Counter({
@@ -55,6 +61,6 @@ import { MultiplaEscolhaGabarito } from '../atividades/entity/multipla-escolha-g
       }),
     },
   ],
-  exports: [AdmPermissionGuard],
+  exports: [AdmPermissionGuard, AulasService],
 })
 export class AulasModule {}

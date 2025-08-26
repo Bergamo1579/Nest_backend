@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { IAula } from './contract/aulas.contract';
 import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -191,15 +191,17 @@ export class AulasService {
   }
 
   async deleteCascade(id: string): Promise<{ message: string; detalhes: any }> {
-    // Apaga todas as atividades relacionadas à aula
+    // 1. Deleta atividades e tudo relacionado
     await this.atividadesService.deleteByAulaId(id);
 
-    // Apaga todos os conteúdos relacionados à aula
+    // 2. Deleta conteúdos relacionados
     await this.conteudoService.deleteByAulaId(id);
 
-    // Por fim, apaga a aula
-    const result = await this.delete(id); // seu método padrão de delete de aula
-
+    // 3. Agora pode deletar a aula
+    const result = await this.aulasRepository.delete({ id });
+    if (result.affected === 0) {
+      throw new BadRequestException('Registro relacionado não existe ou é inválido.');
+    }
     return { message: 'Aula e tudo relacionado deletado com sucesso', detalhes: result };
   }
 }

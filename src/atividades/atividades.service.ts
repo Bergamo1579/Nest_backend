@@ -840,7 +840,9 @@ export class AtividadesService {
   }
 
   async deleteByAulaId(aulaId: string): Promise<void> {
-    await this.atividadesRepository.delete({ aula_id: aulaId });
-    // Se precisar deletar em cascata nas tabelas filhas, faça aqui também
+    const atividades = await this.atividadesRepository.find({ where: { aula_id: aulaId } });
+    for (const atividade of atividades) {
+      await this.delete(atividade.id_atividade); // Use o método que já faz a deleção em cascata
+    }
   }
 }
