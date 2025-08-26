@@ -838,4 +838,9 @@ export class AtividadesService {
 
     return resultados;
   }
+
+  async deleteByAulaId(aulaId: string): Promise<void> {
+    await this.atividadesRepository.delete({ aula_id: aulaId });
+    // Se precisar deletar em cascata nas tabelas filhas, faça aqui também
+  }
 }

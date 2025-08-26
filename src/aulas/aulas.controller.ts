@@ -98,10 +98,10 @@ export class AulasController {
   }
 
   @Delete(':id')
-  @ApiOperation({ summary: 'Deleta uma aula' })
-  @ApiResponse({ status: 200, description: 'Aula deletada com sucesso' })
+  @ApiOperation({ summary: 'Deleta uma aula e tudo relacionado' })
+  @ApiResponse({ status: 200, description: 'Aula e relacionados deletados com sucesso' })
   async delete(@Param('id') id: string): Promise<{ message: string; detalhes: any }> {
-    return this.aulasService.delete(id);
+    return this.aulasService.deleteCascade(id);
   }
 
   @Get('aula-resultado')

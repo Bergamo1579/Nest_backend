@@ -100,6 +100,10 @@ export class ConteudoService {
     await this.conteudoRepo.delete(id);
   }
 
+  async deleteByAulaId(aulaId: string): Promise<void> {
+    await this.conteudoRepo.delete({ aula_id: aulaId });
+  }
+
   private async scanFileForVirus(filePath: string) {
     const { stdout } = await execFileAsync('clamscan', [filePath]);
     if (

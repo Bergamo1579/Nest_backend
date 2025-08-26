@@ -13,6 +13,8 @@ import { ResultadoAlunoAulaDto, RespostaAlunoAtividadeDto } from './dto/query-au
 import { MultiplaEscolhaPerguntas } from '../atividades/entity/multipla-escolha-perguntas.entity';
 import { ObjetivaPerguntas } from '../atividades/entity/objetiva-perguntas.entity';
 import { MultiplaEscolhaGabarito } from '../atividades/entity/multipla-escolha-gabarito.entity';
+import { ConteudoService } from '../conteudo/conteudo.service';
+import { AtividadesService } from '../atividades/atividades.service';
 
 @Injectable()
 export class AulasService {
@@ -31,6 +33,8 @@ export class AulasService {
     private readonly objetivaPerguntasRepository: Repository<ObjetivaPerguntas>,
     @InjectRepository(MultiplaEscolhaGabarito)
     private readonly multiplaEscolhaGabaritoRepository: Repository<MultiplaEscolhaGabarito>,
+    private readonly conteudoService: ConteudoService,
+    private readonly atividadesService: AtividadesService,
   ) {}
 
   async findAll(): Promise<IAula[]> {
@@ -184,5 +188,18 @@ export class AulasService {
     }
 
     return resultados;
+  }
+
+  async deleteCascade(id: string): Promise<{ message: string; detalhes: any }> {
+    // Apaga todas as atividades relacionadas à aula
+    await this.atividadesService.deleteByAulaId(id);
+
+    // Apaga todos os conteúdos relacionados à aula
+    await this.conteudoService.deleteByAulaId(id);
+
+    // Por fim, apaga a aula
+    const result = await this.delete(id); // seu método padrão de delete de aula
+
+    return { message: 'Aula e tudo relacionado deletado com sucesso', detalhes: result };
   }
 }
