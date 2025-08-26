@@ -318,6 +318,7 @@ export class ConteudoService {
       const link = await this.linkRepo.findOneBy({ conteudo_id });
       if (!link) throw new NotFoundException('Link não encontrado');
       if (descricao !== undefined) link.descricao = descricao;
+      if (texto !== undefined) link.url = texto;
       return this.linkRepo.save(link);
     }
 
