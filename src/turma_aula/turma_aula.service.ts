@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { ITurmaAula } from './contract/turma_aula.contract';
 import { Repository, LessThanOrEqual, MoreThanOrEqual } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -9,14 +9,8 @@ import { v4 as uuidv4 } from 'uuid';
 import { Turma } from '../turmas/entity/turmas.entity'; // ajuste o caminho conforme sua estrutura
 import { Aluno } from '../alunos/entity/alunos.entity'; // ajuste o caminho conforme sua estrutura
 
-// Função para obter a data/hora atual de Brasília (UTC-3)
-function getNowBrasilia(): Date {
-  const now = new Date();
-  return new Date(now.getTime() - 3 * 60 * 60 * 1000);
-}
-
+// Função utilitária para converter para horário de Brasília (UTC-3)
 function toBrasilia(date: Date): Date {
-  // Ajusta para UTC-3
   return new Date(date.getTime() - 3 * 60 * 60 * 1000);
 }
 
@@ -31,6 +25,11 @@ export class TurmaAulaService {
     private readonly alunoRepository: Repository<Aluno>,
   ) {}
 
+  private getNowBrasilia(): Date {
+    const now = new Date();
+    return new Date(now.getTime() - 3 * 60 * 60 * 1000);
+  }
+
   async create(dto: CreateTurmaAulaDto): Promise<ITurmaAula> {
     // Buscar unidade da turma
     const turma = await this.turmaRepository.findOneBy({ id: dto.turma_id });
@@ -42,8 +41,8 @@ export class TurmaAulaService {
       throw new BadRequestException('horario_inicio deve ser menor que horario_fim');
     }
 
-    // Verificação de data e horário no futuro
-    const nowBrasilia = getNowBrasilia();
+    // Validação: não permitir agendar para o passado
+    const nowBrasilia = this.getNowBrasilia();
     const agendamentoBrasilia = new Date(`${dto.data_aula}T${dto.horario_inicio}:00`);
 
     if (agendamentoBrasilia < nowBrasilia) {
