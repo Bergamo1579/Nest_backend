@@ -9,6 +9,13 @@ import { v4 as uuidv4 } from 'uuid';
 import { Turma } from '../turmas/entity/turmas.entity'; // ajuste o caminho conforme sua estrutura
 import { Aluno } from '../alunos/entity/alunos.entity'; // ajuste o caminho conforme sua estrutura
 
+// Função para obter a data/hora atual de Brasília (UTC-3)
+function getNowBrasilia(): Date {
+  const now = new Date();
+  // Subtrai 3 horas do horário UTC
+  return new Date(now.getTime() - 3 * 60 * 60 * 1000);
+}
+
 @Injectable()
 export class TurmaAulaService {
   constructor(
@@ -17,7 +24,7 @@ export class TurmaAulaService {
     @InjectRepository(Turma)
     private readonly turmaRepository: Repository<Turma>,
     @InjectRepository(Aluno)
-    private readonly alunoRepository: Repository<Aluno>, // ADICIONE ESTA LINHA
+    private readonly alunoRepository: Repository<Aluno>,
   ) {}
 
   async create(dto: CreateTurmaAulaDto): Promise<ITurmaAula> {
@@ -32,21 +39,19 @@ export class TurmaAulaService {
     }
 
     // Verificação de data e horário no futuro
-    const now = new Date();
-    // Força UTC na comparação
-    const nowUtc = new Date(new Date().toISOString());
-    const agendamentoUtc = new Date(`${dto.data_aula}T${dto.horario_inicio}Z`); // <-- repare no 'Z' no final
+    const nowBrasilia = getNowBrasilia();
+    const agendamentoBrasilia = new Date(`${dto.data_aula}T${dto.horario_inicio}:00`);
 
-    if (agendamentoUtc < nowUtc) {
+    if (agendamentoBrasilia < nowBrasilia) {
       throw new BadRequestException('Não é permitido agendar para o passado');
     }
 
-    const agendamento = this.turmaAulaRepository.create({
+    const agendamentoEntity = this.turmaAulaRepository.create({
       ...dto,
       unidade_id,
       id: uuidv4(),
     });
-    return this.turmaAulaRepository.save(agendamento);
+    return this.turmaAulaRepository.save(agendamentoEntity);
   }
 
   async updateAgendamento(id: string, dto: Partial<Pick<TurmaAula, 'data_aula' | 'horario_inicio' | 'horario_fim'>>): Promise<ITurmaAula> {
