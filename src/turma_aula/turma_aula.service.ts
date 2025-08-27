@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { ITurmaAula } from './contract/turma_aula.contract';
-import { Repository } from 'typeorm';
+import { Repository, LessThanOrEqual, MoreThanOrEqual } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { TurmaAula } from './entity/turma_aula.entity';
 import { CreateTurmaAulaDto } from './dto/create-turma_aula.dto';
@@ -14,6 +14,11 @@ function getNowBrasilia(): Date {
   const now = new Date();
   // Subtrai 3 horas do horário UTC
   return new Date(now.getTime() - 3 * 60 * 60 * 1000);
+}
+
+function toBrasilia(date: Date): Date {
+  // Ajusta para UTC-3
+  return new Date(date.getTime() - 3 * 60 * 60 * 1000);
 }
 
 @Injectable()
@@ -39,8 +44,8 @@ export class TurmaAulaService {
     }
 
     // Verificação de data e horário no futuro
-    const nowBrasilia = getNowBrasilia();
-    const agendamentoBrasilia = new Date(`${dto.data_aula}T${dto.horario_inicio}:00`);
+    const nowBrasilia = toBrasilia(new Date());
+    const agendamentoBrasilia = toBrasilia(new Date(`${dto.data_aula}T${dto.horario_inicio}:00`));
 
     if (agendamentoBrasilia < nowBrasilia) {
       throw new BadRequestException('Não é permitido agendar para o passado');
@@ -153,7 +158,12 @@ export class TurmaAulaService {
   }
 
   async findOne(id: string): Promise<ITurmaAula> {
-    const agendamento = await this.turmaAulaRepository.findOneBy({ id });
+    const agendamento = await this.turmaAulaRepository.findOne({ where: { id } });
+    if (agendamento) {
+      agendamento.data_aula = toBrasilia(new Date(agendamento.data_aula)).toISOString().substring(0, 10);
+      agendamento.horario_inicio = toBrasilia(new Date(`${agendamento.data_aula}T${agendamento.horario_inicio}`)).toTimeString().substring(0, 8);
+      // ...idem para horario_fim
+    }
     if (!agendamento) {
       throw new NotFoundException('Agendamento não encontrado');
     }
