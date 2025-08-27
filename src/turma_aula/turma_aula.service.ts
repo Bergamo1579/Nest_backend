@@ -12,7 +12,6 @@ import { Aluno } from '../alunos/entity/alunos.entity'; // ajuste o caminho conf
 // Função para obter a data/hora atual de Brasília (UTC-3)
 function getNowBrasilia(): Date {
   const now = new Date();
-  // Subtrai 3 horas do horário UTC
   return new Date(now.getTime() - 3 * 60 * 60 * 1000);
 }
 
@@ -44,8 +43,8 @@ export class TurmaAulaService {
     }
 
     // Verificação de data e horário no futuro
-    const nowBrasilia = toBrasilia(new Date());
-    const agendamentoBrasilia = toBrasilia(new Date(`${dto.data_aula}T${dto.horario_inicio}:00`));
+    const nowBrasilia = getNowBrasilia();
+    const agendamentoBrasilia = new Date(`${dto.data_aula}T${dto.horario_inicio}:00`);
 
     if (agendamentoBrasilia < nowBrasilia) {
       throw new BadRequestException('Não é permitido agendar para o passado');
