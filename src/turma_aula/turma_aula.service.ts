@@ -33,8 +33,11 @@ export class TurmaAulaService {
 
     // Verificação de data e horário no futuro
     const now = new Date();
-    const agendamentoDate = new Date(`${dto.data_aula}T${dto.horario_inicio}`);
-    if (agendamentoDate < now) {
+    // Força UTC na comparação
+    const nowUtc = new Date(new Date().toISOString());
+    const agendamentoUtc = new Date(`${dto.data_aula}T${dto.horario_inicio}Z`); // <-- repare no 'Z' no final
+
+    if (agendamentoUtc < nowUtc) {
       throw new BadRequestException('Não é permitido agendar para o passado');
     }
 
