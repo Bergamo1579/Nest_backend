@@ -14,6 +14,7 @@ function toBrasilia(date: Date): Date {
   return new Date(date.getTime() - 3 * 60 * 60 * 1000);
 }
 
+// Função para pegar o horário de Brasília (UTC-3)
 function getNowBrasilia(): Date {
   const now = new Date();
   return new Date(now.getTime() - 3 * 60 * 60 * 1000);
@@ -30,7 +31,7 @@ export class TurmaAulaService {
     private readonly alunoRepository: Repository<Aluno>,
   ) {}
 
-  async create(dto: CreateTurmaAulaDto): Promise<ITurmaAula> {
+  async create(dto: CreateTurmaAulaDto): Promise<TurmaAula> {
     // Buscar unidade da turma
     const turma = await this.turmaRepository.findOneBy({ id: dto.turma_id });
     if (!turma) throw new NotFoundException('Turma não encontrada');
@@ -43,8 +44,12 @@ export class TurmaAulaService {
 
     // Validação: não permitir agendar para o passado
     const nowBrasilia = getNowBrasilia();
-    const agendamentoBrasilia = new Date(`${dto.data_aula}T${dto.horario_inicio}:00`);
 
+    // Monta a data/hora do agendamento em Brasília
+    // Garante que está no formato correto
+    const agendamentoBrasilia = new Date(`${dto.data_aula}T${dto.horario_inicio}`);
+
+    // Debug: veja os valores no log
     console.log('nowBrasilia:', nowBrasilia, 'agendamentoBrasilia:', agendamentoBrasilia);
 
     if (agendamentoBrasilia < nowBrasilia) {
