@@ -14,6 +14,11 @@ function toBrasilia(date: Date): Date {
   return new Date(date.getTime() - 3 * 60 * 60 * 1000);
 }
 
+function getNowBrasilia(): Date {
+  const now = new Date();
+  return new Date(now.getTime() - 3 * 60 * 60 * 1000);
+}
+
 @Injectable()
 export class TurmaAulaService {
   constructor(
@@ -24,11 +29,6 @@ export class TurmaAulaService {
     @InjectRepository(Aluno)
     private readonly alunoRepository: Repository<Aluno>,
   ) {}
-
-  private getNowBrasilia(): Date {
-    const now = new Date();
-    return new Date(now.getTime() - 3 * 60 * 60 * 1000);
-  }
 
   async create(dto: CreateTurmaAulaDto): Promise<ITurmaAula> {
     // Buscar unidade da turma
@@ -42,8 +42,10 @@ export class TurmaAulaService {
     }
 
     // Validação: não permitir agendar para o passado
-    const nowBrasilia = this.getNowBrasilia();
+    const nowBrasilia = getNowBrasilia();
     const agendamentoBrasilia = new Date(`${dto.data_aula}T${dto.horario_inicio}:00`);
+
+    console.log('nowBrasilia:', nowBrasilia, 'agendamentoBrasilia:', agendamentoBrasilia);
 
     if (agendamentoBrasilia < nowBrasilia) {
       throw new BadRequestException('Não é permitido agendar para o passado');
