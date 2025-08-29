@@ -9,7 +9,7 @@ import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 
 JwtModule.register({
   secret: process.env.JWT_SECRET,
-  signOptions: { expiresIn: '3h' },
+  signOptions: { expiresIn: '1 min' },
 });
 
 @Injectable()
@@ -51,7 +51,8 @@ export class AuthService {
       role: user.role?.name,
     };
 
-    const access_token = this.jwtService.sign(payload);
+    const token = this.jwtService.sign(payload, { expiresIn: '60s' });
+    // const token = this.jwtService.sign(payload, { expiresIn: '1m' });
 
     // Mapear roles para tipos do frontend
     const roleMapping = {
@@ -65,7 +66,7 @@ export class AuthService {
     const userType = roleMapping[user.role?.name] || 'aluno';
 
     return {
-      token: access_token,
+      token: token,
       user: {
         id: user.uuid,
         username: user.username,

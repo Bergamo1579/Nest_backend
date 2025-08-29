@@ -89,7 +89,7 @@ export class AuthController {
           });
           // Só registra log no momento do bloqueio
           const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress || req.ip;
-          const hora = new Date(now - 3 * 60 * 60 * 1000).toISOString(); // Ajuste para GMT-3
+          const hora = new Date(now - 3 * 60 * 60 * 1000).toISOString();
           const logInfo = {
             username: key,
             ip: Array.isArray(ip) ? ip[0] : ip,
