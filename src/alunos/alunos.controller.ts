@@ -12,7 +12,8 @@ import { AdmPermission } from '../auth/decorators/adm-permission.decorator';
 import { AdmPermissionGuard } from '../auth/guards/adm-permission.guard';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard'; 
 import { LoginTemporarioDto } from '../instrutores/dto/acessos.dto';
-import { InstrutoresService } from '../instrutores/instrutores.service'; // Use o service já existente
+import { AlunoAulaPresence } from './entity/aluno_aula_presence.entity';
+import { FaltasResponseDto } from './dto/faltas-response.dto';
 
 
 @UseGuards(JwtAuthGuard, AdmPermissionGuard)
@@ -26,7 +27,6 @@ import { InstrutoresService } from '../instrutores/instrutores.service'; // Use 
 export class AlunosController {
   constructor(
     private readonly alunosService: AlunosService,
-    private readonly instrutoresService: InstrutoresService, // Injete o service aqui
     @InjectPinoLogger(AlunosService.name) private readonly logger: PinoLogger,
     @Inject('PROM_METRIC_ALUNOS_REQUESTS_TOTAL') private readonly alunosRequests: Counter<string>,
   ) {}
@@ -61,21 +61,41 @@ export class AlunosController {
     return this.alunosService.delete(id);
   }
 
+  @UseGuards(JwtAuthGuard)
+  @Post('acessar-aula')
+  @ApiOperation({ summary: 'Valida o acesso temporário do aluno para aula e retorna JWT' })
+  @ApiResponse({ status: 200, description: 'Acesso temporário validado e token gerado' })
+  async acessarAula(
+    @Body() dto: LoginTemporarioDto,
+    @Request() req
+  ) {
+    return this.alunosService.acessarAula(dto, req.user);
+  }
+
+  @Post('Presence')
+  @ApiOperation({ summary: 'Cria Presence de falta para aluno em aula a partir do token' })
+  @ApiResponse({ status: 201, type: AlunoAulaPresence })
+  async criarPresence(
+    @Query('token') token: string
+  ): Promise<AlunoAulaPresence> {
+    return this.alunosService.criarPresenceFromToken(token);
+  }
+
+  @Get('faltas')
+  @ApiOperation({ summary: 'Lista as faltas do aluno em um período' })
+  @ApiResponse({ status: 200, description: 'Resumo de faltas e lista das aulas que o aluno faltou', type: FaltasResponseDto })
+  async listarFaltas(
+    @Query('aluno_id') aluno_id: string,
+    @Query('data_inicio') data_inicio: string,
+    @Query('data_fim') data_fim: string
+  ): Promise<FaltasResponseDto> {
+    return this.alunosService.listarFaltas(aluno_id, data_inicio, data_fim);
+  }
+
   @Get(':id')
   @ApiOperation({ summary: 'Busca um aluno pelo ID' })
   @ApiResponse({ status: 200, description: 'Aluno encontrado', type: Aluno })
   async findOne(@Param('id') id: string): Promise<Aluno> {
     return this.alunosService.findOne(id);
-  }
-
-  @UseGuards(JwtAuthGuard)
-  @Post('acessar-aula')
-  @ApiOperation({ summary: 'Valida o acesso temporário do aluno para aula' })
-  @ApiResponse({ status: 200, description: 'Acesso temporário validado' })
-  async acessarAula(
-    @Body() dto: LoginTemporarioDto,
-    @Request() req
-  ) {
-    return this.instrutoresService.validarAcessoTemporario(dto, req.user);
   }
 }

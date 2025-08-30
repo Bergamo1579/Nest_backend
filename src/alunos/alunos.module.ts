@@ -8,13 +8,18 @@ import { UserAccessLevel } from '../auth/entity/user_access_levels.entity';
 import { PrometheusModule } from '@willsoto/nestjs-prometheus';
 import { Counter } from 'prom-client';
 import { InstrutoresModule } from '../instrutores/instrutores.module';
-import { AcessosTemporarios } from '../instrutores/entity/acessos_entity.entity';
+import { AlunoAulaPresence } from './entity/aluno_aula_presence.entity';
+import { JwtModule } from '@nestjs/jwt';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Aluno, Auth, UserAccessLevel, AcessosTemporarios]),
+    TypeOrmModule.forFeature([Aluno, Auth, UserAccessLevel, AlunoAulaPresence]),
     PrometheusModule,
     InstrutoresModule,
+    JwtModule.register({
+      secret: process.env.JWT_SECRET,
+      signOptions: { expiresIn: '3h' },
+    }),
   ],
   controllers: [AlunosController],
   providers: [
@@ -27,5 +32,6 @@ import { AcessosTemporarios } from '../instrutores/entity/acessos_entity.entity'
       }),
     },
   ],
+  exports: [JwtModule],
 })
 export class AlunosModule {}

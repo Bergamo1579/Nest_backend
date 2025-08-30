@@ -7,11 +7,6 @@ import * as bcrypt from 'bcrypt';
 import { LoginDto } from './dto/login.dto';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 
-JwtModule.register({
-  secret: process.env.JWT_SECRET,
-  signOptions: { expiresIn: '1 min' },
-});
-
 @Injectable()
 export class AuthService {
   constructor(
@@ -51,10 +46,8 @@ export class AuthService {
       role: user.role?.name,
     };
 
-    const token = this.jwtService.sign(payload, { expiresIn: '60s' });
-    // const token = this.jwtService.sign(payload, { expiresIn: '1m' });
-
-    // Mapear roles para tipos do frontend
+    const token = this.jwtService.sign(payload, { expiresIn: '3h' });
+    
     const roleMapping = {
       'Administrador': 'administrador',
       'Admin': 'administrador',
@@ -76,3 +69,8 @@ export class AuthService {
     };
   }
 }
+
+JwtModule.register({
+  secret: process.env.JWT_SECRET,
+  signOptions: { expiresIn: '3h' },
+});

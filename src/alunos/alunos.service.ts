@@ -8,6 +8,12 @@ import { Auth } from '../auth/entity/auth.entity';
 import { UserAccessLevel } from '../auth/entity/user_access_levels.entity';
 import * as bcrypt from 'bcrypt';
 import { AlunosQueryDto } from './dto/query-alunos.dto';
+import { AlunoAulaPresence} from './entity/aluno_aula_presence.entity';
+import { CreateAlunoAulaPresenceDto } from './dto/create-aluno-aula-presence.dto';
+import { JwtService } from '@nestjs/jwt';
+import { InstrutoresService } from '../instrutores/instrutores.service'; // ajuste o caminho se necessário
+import { LoginTemporarioDto } from '../instrutores/dto/acessos.dto';
+import { FaltasResponseDto } from './dto/faltas-response.dto';
 
 function cleanCpf(cpf: string): string {
   return cpf.replace(/[^\d]/g, '');
@@ -29,6 +35,8 @@ export class AlunosService {
     @InjectRepository(UserAccessLevel)
     private readonly userAccessLevelRepo: Repository<UserAccessLevel>,
     private readonly dataSource: DataSource,
+    private readonly instrutoresService: InstrutoresService,
+    private readonly jwtService: JwtService,
   ) {}
 
   async findAll(query?: AlunosQueryDto): Promise<any[]> {
@@ -151,4 +159,129 @@ export class AlunosService {
     await this.usersRepository.delete(id);
     await this.userAccessLevelRepo.delete({ user_uuid: id });
   }
+
+  async criarPresence(dto: CreateAlunoAulaPresenceDto) {
+    return await this.dataSource.transaction(async manager => {
+      const presence = manager.create(AlunoAulaPresence, { ...dto });
+      return manager.save(AlunoAulaPresence, presence);
+    });
+  }
+
+  async acessarAula(dto: LoginTemporarioDto, reqUser: any) {
+    // Valida o acesso temporário (já faz a checagem da senha)
+    const user = await this.instrutoresService.validarAcessoTemporario(dto, reqUser);
+
+    if (user && process.env.ACESS_AULA) {
+      const payload = {
+        sub: user.aluno_id,
+        aluno_id: user.aluno_id,
+        aula_id: dto.aula_id,
+        type: 'acesso_aula',
+      };
+      const token = this.jwtService.sign(payload, {
+        secret: process.env.ACESS_AULA,
+        expiresIn: '1h',
+      });
+
+      return {
+        message: 'Acesso temporário validado',
+        token: `Bearer ${token}`,
+        user: payload,
+      };
+    }
+
+    // Se não validar, retorna só a mensagem (ou lance um erro se preferir)
+    return { message: 'Acesso temporário inválido' };
+  }
+
+  async criarPresenceFromToken(token: string) {
+    // Remove "Bearer " se vier assim
+    if (token.startsWith('Bearer ')) {
+      token = token.slice(7);
+    }
+
+    // Decodifica e valida o token
+    let payload: any;
+    try {
+      payload = this.jwtService.verify(token, { secret: process.env.ACESS_AULA });
+    } catch (e) {
+      throw new Error('Token inválido ou expirado');
+    }
+
+    // Extrai os dados do payload
+    const aluno_id = payload.aluno_id;
+    const aula_id = payload.aula_id;
+
+    if (!aluno_id || !aula_id) {
+      throw new Error('Token não contém aluno_id ou aula_id');
+    }
+
+    // Salva a presença normalmente
+    return await this.dataSource.transaction(async manager => {
+      const presence = manager.create(AlunoAulaPresence, { aluno_id, aula_id });
+      return manager.save(AlunoAulaPresence, presence);
+    });
+  }
+
+  async listarFaltas(aluno_id: string, data_inicio: string, data_fim: string): Promise<FaltasResponseDto> {
+    console.log('=== listarFaltas called ===');
+    console.log('raw params:', { aluno_id, data_inicio, data_fim });
+
+    const start = (data_inicio || '').split('T')[0];
+    const end = (data_fim || '').split('T')[0];
+
+    // Use full-day range to avoid time issues
+    const startDateTime = `${start} 00:00:00`;
+    const endDateTime = `${end} 23:59:59`;
+
+    const result = await this.dataSource.query(
+      `
+      SELECT 
+        ta.aula_id,
+        au.titulo AS nome_aula,
+        ta.data_aula,
+        CASE WHEN p.id IS NULL THEN 0 ELSE 1 END AS presenca
+      FROM turma_aula ta
+      JOIN alunos a 
+        ON a.turma_id = ta.turma_id
+      JOIN aulas au 
+        ON au.id = ta.aula_id
+      LEFT JOIN presence p 
+        ON p.aula_id = ta.aula_id 
+       AND p.aluno_id = a.id
+      WHERE a.id = ?
+        AND ta.data_aula BETWEEN ? AND ?
+      ORDER BY ta.data_aula
+      `,
+      [aluno_id, startDateTime, endDateTime]
+    ) as FaltaQueryResult[];
+
+    console.log('query params used:', { aluno_id, startDateTime, endDateTime });
+    console.log('query rows count:', result.length, 'rows:', result.map(r => ({ aula_id: r.aula_id, data_aula: r.data_aula, presenca: r.presenca })));
+
+    const totalAulas = result.length;
+    const totalPresencas = result.filter((r: FaltaQueryResult) => r.presenca == 1).length;
+    const totalFaltas = result.filter((r: FaltaQueryResult) => r.presenca == 0).length;
+    const faltas = result
+      .filter((r: FaltaQueryResult) => r.presenca == 0)
+      .map((r: FaltaQueryResult) => ({
+        aula_id: r.aula_id,
+        nome_aula: r.nome_aula,
+        data_aula: r.data_aula,
+      }));
+
+    return {
+      total_aulas: totalAulas,
+      total_presencas: totalPresencas,
+      total_faltas: totalFaltas,
+      faltas,
+    };
+  }
+}
+
+interface FaltaQueryResult {
+  aula_id: string;
+  nome_aula: string;
+  data_aula: string;
+  presenca: number;
 }
